@@ -147,6 +147,7 @@ OO.plugin("Html5Skin", function (OO, _, $, W) {
         this.mb.subscribe(OO.EVENTS.VC_VIDEO_ELEMENT_IN_FOCUS, "customerUi", _.bind(this.onVideoElementFocus, this));
         this.mb.subscribe(OO.EVENTS.REPLAY, "customerUi", _.bind(this.onReplay, this));
         this.mb.subscribe(OO.EVENTS.ASSET_DIMENSION, "customerUi", _.bind(this.onAssetDimensionsReceived, this));
+		this.mb.subscribe(OO.EVENTS.METADATA_FETCHED, "customerUi", _.bind(this.onMetadataFetched, this));
 
         // ad events
         if (!Utils.isIPhone()) {
@@ -315,6 +316,24 @@ OO.plugin("Html5Skin", function (OO, _, $, W) {
       this.state.contentTree = contentTree;
       this.state.playerState = CONSTANTS.STATE.START;
       this.renderSkin({"contentTree": contentTree});
+    },
+	
+    onMetadataFetched: function (event, metadata) {
+		this.state.customMetadata = metadata;
+		this.state.chapters = this.parseChapters(metadata.base);
+		this.renderSkin();
+    },
+
+    parseChapters: function (base) {
+		console.log("PARSING CHAPTERS...");
+		var chapters = {};
+		_.each(base, function(v,k){
+			if(k.indexOf("oo_chapter_") > -1){
+				var key = k.replace("oo_chapter_", "");
+				chapters[key] = $('<textarea />').html(v).text();
+			}
+		});
+		return chapters;
     },
 
     onVolumeChanged: function (event, newVolume){

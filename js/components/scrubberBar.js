@@ -12,6 +12,7 @@ var ScrubberBar = React.createClass({
   getInitialState: function() {
     this.isMobile = this.props.controller.state.isMobile;
     this.lastScrubX = null;
+	this.chapters = this.props.controller.state.chapters;
 
     return {
       scrubberBarWidth: 0,
@@ -141,7 +142,7 @@ var ScrubberBar = React.createClass({
 
   handleScrubberBarMouseDown: function(evt) {
     if (this.props.controller.state.screenToShow == CONSTANTS.SCREEN.AD_SCREEN) return;
-    if (evt.target.className.match("oo-playhead")) { return; }
+    if (evt.target.className.match("oo-playhead") || evt.target.className.match("chapterMarker")) { return; }
     var offsetX = 0;
     if (this.isMobile){
       offsetX = evt.targetTouches[0].pageX - evt.target.getBoundingClientRect().left;
@@ -156,8 +157,33 @@ var ScrubberBar = React.createClass({
     this.props.controller.updateSeekingPlayhead((offsetX / this.state.scrubberBarWidth) * this.props.duration);
     this.handlePlayheadMouseDown(evt);
   },
+  
+  handleChapterMarkerMouseDown: function(data, evt) {
+    if (this.props.controller.state.screenToShow == CONSTANTS.SCREEN.AD_SCREEN) return;
+    var offsetX = data.x_position;
+
+    this.setState({
+      scrubbingPlayheadX: offsetX
+    });
+    this.props.controller.updateSeekingPlayhead((offsetX / this.state.scrubberBarWidth) * this.props.duration);
+    this.handlePlayheadMouseDown(evt);
+  },
 
   render: function() {
+  	var chapterMarkers = [];
+  	var chapterKeys = Object.keys(this.chapters);
+  	for (var i = 0; i < chapterKeys.length; i++) {
+  		var x_position = (chapterKeys[i] / this.props.duration) * this.state.scrubberBarWidth;
+  		var markerStyle = {
+  			left:x_position + 'px',
+  			backgroundColor:this.props.skinConfig.controlBar.scrubberBar.chapterMarkers.backgroundColor
+  		};
+  		var chapterText = this.chapters[chapterKeys[i]];
+  		var data = {"timecode": chapterKeys[i], "x_position":x_position}
+  		chapterMarkers.push(<div className='chapterMarker' key={i} style={markerStyle} onMouseDown={this.handleChapterMarkerMouseDown.bind(null, data)} onTouchStart={this.handleChapterMarkerMouseDown.bind(null, data)}></div>);
+  		chapterMarkers.push(<div className='chapterText' key={i+'_chapterText'}>{chapterText}</div>);
+  	}  
+	  
     var scrubberBarStyle = {
       backgroundColor: this.props.skinConfig.controlBar.scrubberBar.backgroundColor
     };
@@ -214,6 +240,7 @@ var ScrubberBar = React.createClass({
               onMouseDown={playheadMouseDown} onTouchStart={playheadMouseDown}>
               <div ref="playhead" className={playheadClassName} style={playheadStyle}></div>
             </div>
+			{this.props.skinConfig.controlBar.scrubberBar.chapterMarkers.showChapterMarkers ? chapterMarkers : null}
           </div>
         </div>
       </div>
